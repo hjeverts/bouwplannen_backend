@@ -1,0 +1,13 @@
+services:
+  bouwplannen-api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      # Zet de sleutel in een .env-bestand naast dit bestand (BOUWPLANNEN_API_KEY=...), niet hier.
+      Auth__ApiKey: ${BOUWPLANNEN_API_KEY:?Zet BOUWPLANNEN_API_KEY in .env}
+      # Adres waarop de frontend draait (meerdere: Cors__AllowedOrigins__1, __2, ...)
+      Cors__AllowedOrigins__0: ${BOUWPLANNEN_FRONTEND_ORIGIN:-http://localhost:4200}

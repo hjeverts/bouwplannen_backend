@@ -107,6 +107,52 @@ public sealed class FileProjectRepository : IProjectRepository, IDisposable
         }
     }
 
+    public async Task<ProjectDocument?> GetIncludingDeletedAsync(string id, CancellationToken ct)
+    {
+        await _lock.WaitAsync(ct);
+        try
+        {
+            return _projects.GetValueOrDefault(id);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task<int> CountInGroupAsync(string groupId, CancellationToken ct)
+    {
+        await _lock.WaitAsync(ct);
+        try
+        {
+            return _projects.Values.Count(p => !p.Deleted && p.GroupId == groupId);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task<int> AssignOrphansAsync(string groupId, CancellationToken ct)
+    {
+        await _lock.WaitAsync(ct);
+        try
+        {
+            var orphans = _projects.Values.Where(p => p.GroupId is null).ToList();
+            foreach (var p in orphans)
+            {
+                var moved = p with { GroupId = groupId, Version = p.Version + 1, ServerModified = NextStamp() };
+                await WriteFileAsync(moved, ct);
+                _projects[p.Id] = moved;
+            }
+            return orphans.Count;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     public async Task<WriteResult> UpsertAsync(string id, ProjectInput input, long? expectedVersion, CancellationToken ct)
     {
         await _lock.WaitAsync(ct);
@@ -124,6 +170,8 @@ public sealed class FileProjectRepository : IProjectRepository, IDisposable
                 Created = input.Created!,
                 Updated = input.Updated!,
                 Items = input.Items!.Value.Clone(),
+                GroupId = input.GroupId,
+                PreviousGroupId = current is not null && current.GroupId != input.GroupId ? current.GroupId : current?.PreviousGroupId,
                 Version = (current?.Version ?? 0) + 1,
                 ServerModified = NextStamp(),
                 Deleted = false,

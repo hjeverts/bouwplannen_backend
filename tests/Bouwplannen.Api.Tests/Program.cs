@@ -4,7 +4,7 @@ using Bouwplannen.Api.Tests;
 // Minimal test runner: runs every test, prints the outcome, exits non-zero on any failure (CI-friendly).
 // Optional argument: part of a test name to run only matching tests.
 var filter = args.FirstOrDefault();
-var tests = ProjectApiTests.All().Where(t => filter is null || t.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+var tests = ProjectApiTests.All().Concat(AccountTests.All()).Where(t => filter is null || t.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
 var failed = 0;
 var total = Stopwatch.StartNew();
 

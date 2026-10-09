@@ -18,6 +18,12 @@ public sealed record ProjectDocument
 
     public required JsonElement Items { get; init; }
 
+    /// <summary>The group whose members may see and change this project. Null only for projects from before accounts existed.</summary>
+    public string? GroupId { get; init; }
+
+    /// <summary>Group before the last move, so members of that group learn the project left it.</summary>
+    public string? PreviousGroupId { get; init; }
+
     /// <summary>Increases by one on every write; used for optimistic concurrency (ETag / If-Match).</summary>
     public long Version { get; init; }
 
@@ -36,9 +42,12 @@ public sealed record ProjectInput
     public string? Created { get; init; }
     public string? Updated { get; init; }
     public JsonElement? Items { get; init; }
+    public string? GroupId { get; init; }
 }
 
-public sealed record ProjectListResponse(DateTimeOffset ServerTime, IReadOnlyList<ProjectDocument> Projects);
+/// <param name="GroupIds">The groups this user can see now; projects of other groups should be removed locally.</param>
+/// <param name="Removed">Projects that were moved to a group this user is not in since the cursor.</param>
+public sealed record ProjectListResponse(DateTimeOffset ServerTime, IReadOnlyList<ProjectDocument> Projects, IReadOnlyList<string> GroupIds, IReadOnlyList<string> Removed);
 
 public static partial class ProjectRules
 {
@@ -69,6 +78,9 @@ public static partial class ProjectRules
 
         if (input.Items is not { ValueKind: JsonValueKind.Array })
             errors["items"] = ["Items moet een lijst (JSON-array) zijn."];
+
+        if (string.IsNullOrWhiteSpace(input.GroupId))
+            errors["groupId"] = ["Kies in welke groep het project komt."];
 
         return errors;
     }

@@ -33,6 +33,15 @@ public interface IProjectRepository
     /// <summary>The project, or null when it does not exist or was deleted.</summary>
     Task<ProjectDocument?> GetAsync(string id, CancellationToken ct);
 
+    /// <summary>The project or its tombstone, or null when the id was never used.</summary>
+    Task<ProjectDocument?> GetIncludingDeletedAsync(string id, CancellationToken ct);
+
+    /// <summary>Number of (not deleted) projects in a group.</summary>
+    Task<int> CountInGroupAsync(string groupId, CancellationToken ct);
+
+    /// <summary>Puts projects from before accounts existed (no group) in the given group. Returns how many.</summary>
+    Task<int> AssignOrphansAsync(string groupId, CancellationToken ct);
+
     /// <param name="expectedVersion">
     /// null: write unconditionally. 0 or higher: only if the stored version matches.
     /// -1: only if the project exists (If-Match: *).

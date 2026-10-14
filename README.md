@@ -4,7 +4,7 @@
 
 ## Ontwerpkeuzes
 
-- **De metingen zijn van de app.** De server bewaart per project de naam, tijdstippen, groep en de lijst `items` precies zoals de frontend ze stuurt. Nieuwe soorten metingen in de app vragen dus geen wijziging in de backend.
+- **De metingen zijn van de app.** De server bewaart per project de naam, tijdstippen, groep, de instellingen (`settings`, bijv. de eenheid voor maten) en de lijst `items` precies zoals de frontend ze stuurt. Nieuwe soorten metingen in de app vragen dus geen wijziging in de backend.
 - **Opslag als JSON-bestanden** in de datamap: `projects/<id>.json` per project en `accounts.json` met gebruikers en groepen. Snel, transparant en makkelijk te back-uppen. Schrijven is atomair (tijdelijk bestand + rename). Alle projectopslag gaat via `IProjectRepository`, dus een database-variant kan later zonder de endpoints te raken.
 - **Geen externe NuGet-pakketten**: alleen het .NET-framework zelf (cookie-login, rate limiting en PBKDF2 zitten erin).
 - **Synchroniseren zonder dataverlies**: elke wijziging verhoogt `version` (ook als `ETag`). Met `If-Match` schrijf je alleen als niemand anders tussendoor iets heeft veranderd; anders krijg je `409` met de huidige versie. Verwijderde projecten blijven als *tombstone* bestaan, zodat andere apparaten ook horen dat ze weg zijn.
@@ -66,7 +66,7 @@ De API vertrouwt `X-Forwarded-Proto` en `X-Forwarded-For`: draai hem alleen acht
 
 ```bash
 dotnet run --project src/Bouwplannen.Api          # http://localhost:5094
-dotnet run --project tests/Bouwplannen.Api.Tests  # 34 tests
+dotnet run --project tests/Bouwplannen.Api.Tests  # 35 tests
 ```
 
 Voor productie: zie de deploy-repo (Docker Compose, nginx, `update.sh`, `user.sh`).

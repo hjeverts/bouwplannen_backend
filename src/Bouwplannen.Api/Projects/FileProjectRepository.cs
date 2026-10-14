@@ -170,6 +170,7 @@ public sealed class FileProjectRepository : IProjectRepository, IDisposable
                 Created = input.Created!,
                 Updated = input.Updated!,
                 Items = input.Items!.Value.Clone(),
+                Settings = input.Settings is { ValueKind: JsonValueKind.Object } settings ? settings.Clone() : null,
                 GroupId = input.GroupId,
                 PreviousGroupId = current is not null && current.GroupId != input.GroupId ? current.GroupId : current?.PreviousGroupId,
                 Version = (current?.Version ?? 0) + 1,

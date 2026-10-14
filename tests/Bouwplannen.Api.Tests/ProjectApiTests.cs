@@ -13,6 +13,7 @@ public static class ProjectApiTests
     [
         ("health is open, projects need a login", NeedsLogin),
         ("create, read back, items stored unchanged", CreateAndRead),
+        ("project settings (unit) are stored as sent and validated", SettingsStored),
         ("update with If-Match, conflict on a stale version", OptimisticConcurrency),
         ("If-Match: * on a missing project is 404", IfMatchStarOnMissing),
         ("invalid input gives validation errors (group required)", Validation),
@@ -85,6 +86,22 @@ public static class ProjectApiTests
         Assert.Equal(1, list.GetProperty("projects").GetArrayLength());
         Assert.True(list.GetProperty("groupIds").EnumerateArray().Any(g => g.GetString() == hans.PersonalGroupId));
         Assert.Equal(HttpStatusCode.NotFound, (await hans.Http.GetAsync("/api/projects/onbekend")).StatusCode);
+    });
+
+    private static Task SettingsStored() => WithHost(async h =>
+    {
+        var hans = await h.LoginAsync("hans");
+        var g = hans.PersonalGroupId;
+        var body = new { id = "p1", name = "Schuur", created = "2026-10-09T10:00:00.000Z", updated = "2026-10-09T10:00:00.000Z", groupId = g, items = Array.Empty<object>(), settings = new { unit = "mm" } };
+        Assert.Equal(HttpStatusCode.Created, (await Put(hans.Http, "p1", body)).StatusCode);
+        var doc = await TestHost.ReadJson(await hans.Http.GetAsync("/api/projects/p1"));
+        Assert.Equal("mm", doc.GetProperty("settings").GetProperty("unit").GetString());
+        // Without settings (older apps) it is simply absent.
+        Assert.Equal(HttpStatusCode.OK, (await Put(hans.Http, "p1", TestHost.Project("p1", g), "\"1\"")).StatusCode);
+        var again = await TestHost.ReadJson(await hans.Http.GetAsync("/api/projects/p1"));
+        Assert.True(!again.TryGetProperty("settings", out var s) || s.ValueKind == JsonValueKind.Null);
+        var bad = new { id = "p2", name = "x", created = "2026-10-09T10:00:00.000Z", updated = "2026-10-09T10:00:00.000Z", groupId = g, items = Array.Empty<object>(), settings = "mm" };
+        Assert.Equal(HttpStatusCode.BadRequest, (await Put(hans.Http, "p2", bad)).StatusCode);
     });
 
     private static Task OptimisticConcurrency() => WithHost(async h =>

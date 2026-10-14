@@ -18,6 +18,9 @@ public sealed record ProjectDocument
 
     public required JsonElement Items { get; init; }
 
+    /// <summary>Project settings of the app (such as the unit for lengths), stored as sent. Null when absent.</summary>
+    public JsonElement? Settings { get; init; }
+
     /// <summary>The group whose members may see and change this project. Null only for projects from before accounts existed.</summary>
     public string? GroupId { get; init; }
 
@@ -42,6 +45,7 @@ public sealed record ProjectInput
     public string? Created { get; init; }
     public string? Updated { get; init; }
     public JsonElement? Items { get; init; }
+    public JsonElement? Settings { get; init; }
     public string? GroupId { get; init; }
 }
 
@@ -78,6 +82,9 @@ public static partial class ProjectRules
 
         if (input.Items is not { ValueKind: JsonValueKind.Array })
             errors["items"] = ["Items moet een lijst (JSON-array) zijn."];
+
+        if (input.Settings is { } settings && settings.ValueKind is not (JsonValueKind.Object or JsonValueKind.Null))
+            errors["settings"] = ["Settings moet een object zijn."];
 
         if (string.IsNullOrWhiteSpace(input.GroupId))
             errors["groupId"] = ["Kies in welke groep het project komt."];
